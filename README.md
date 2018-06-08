@@ -44,7 +44,7 @@ $ tensorboard --logdir ./runs
 
 Some training hyper parameters can be specified from the command line options of `main.py`. 
 
-At default, batch size is 128 both for training and validation, and epoch is set to 50. 
+At default, batch size is 128 both for training and validation, and epoch is set to 100. 
 Learning rate of Adam optimizer is set to 0.001 and is exponentially decayed every epoch with the factor of 0.9. 
 
 For more details, type `python main.py --help`.
