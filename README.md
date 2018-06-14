@@ -76,6 +76,9 @@ CapsNet-v4  |  3 | yes| 0.33 | *0.25*
 
 ![](images/reconstruction_results.png)
 
+`runs/example` directory has a tesorboard evant file when trained with the default training configuration, 
+so that you can check more details.
+
 ## License
 
 [MIT License](LICENSE.txt)
