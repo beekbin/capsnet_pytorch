@@ -21,8 +21,8 @@ This figure is from [CapsNet-Tensorflow](https://github.com/naturomics/CapsNet-T
 **Step 1.** Clone this repository
 
 ```bash
-$ git clone https://github.com/motokimura/CapsNet-PyTorch.git
-$ cd CapsNet-PyTorch
+$ git clone https://github.com/motokimura/capsnet_pytorch.git
+$ cd capsnet_pytorch
 ```
 
 **Step 2.** Start the training
@@ -35,7 +35,7 @@ $ python main.py
 
 ```bash
 # In another terminal window, 
-$ cd CapsNet-PyTorch
+$ cd capsnet_pytorch
 $ tensorboard --logdir ./runs
 
 # Then, open "http://localhost:6006" from your browser and 
@@ -70,7 +70,7 @@ Method     |   Routing   |   Reconstruction  |  Test error  |  *Paper*
 CapsNet-v1 |  1 | no | not tested yet  | *0.34 (0.032)* 
 CapsNet-v2  |  1 | yes | not tested yet | *0.29 (0.011)*
 CapsNet-v3 |  3 | no | not tested yet | *0.35 (0.036)*
-CapsNet-v4  |  3 | yes| 0.33 | *0.25*
+CapsNet-v4  |  3 | yes| **0.33** | *0.25*
 
 ### Reconstruction results
 
@@ -78,7 +78,7 @@ CapsNet-v4  |  3 | yes| 0.33 | *0.25*
 
 ![](images/reconstruction_results.gif)
 
-`runs/example` directory has a tesorboard event file when trained with the default training configuration, 
+`runs/example` directory has a tesorboard event file when trained at the default configuration 
 so that you can check more details.
 
 ## License
