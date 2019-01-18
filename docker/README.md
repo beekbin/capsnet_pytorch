@@ -5,7 +5,8 @@
 You can build Docker image by following: 
 
 ```
-$ cd docker
+# PROJ_DIR=/path/to/capsnet_pytorch
+$ cd $PROJ_DIR/docker
 $ bash build.sh
 ```
 
@@ -14,7 +15,7 @@ $ bash build.sh
 You can launch a container from the Docker image by following:
 
 ```
-$ cd docker
+$ cd $PROJ_DIR/docker
 $ bash run.sh
 # Now you will be inside the container
 ```
@@ -23,7 +24,7 @@ Root of this repository is mounted to `/workspace` of the container.
 You can start training inside the container by following.
 
 ```
-# After executing run.sh, you should be in /workspace inside the container.
+$(docker) cd /workspace
 $(docker) python main.py
 ```
 
@@ -33,10 +34,11 @@ You can run a command in the container already running.
 This is useful to execute `tensorboard` to monitor training status:
 
 ```
-$ cd docker
+$ cd $PROJ_DIR/docker
 $ bash exec.sh
-# Now you should be in /workspace inside the container
+# Now you should be inside the container already running
 
+$(docker) cd /workspace
 $(docker) tensorboard --logdir runs
 # Then, open "http://localhost:6006" from your browser. 
 ```
