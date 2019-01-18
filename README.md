@@ -12,9 +12,11 @@ This figure is from [CapsNet-Tensorflow](https://github.com/naturomics/CapsNet-T
 
 ## Requirements
 
-- [PyTorch](http://pytorch.org/) (with CUDA)
-- [TensorBoard](https://github.com/tensorflow/tensorboard)
-- [tensorboard-pytorch](https://github.com/lanpa/tensorboard-pytorch)
+- GPU and NVIDIA driver
+- PyTorch and other Python modules (see (requiremtns.txt)[requiremtns.txt]).
+
+This repository also provides Dockerfile for CapsNet training. 
+Check (docker directory)[docker] to know how to setup/use Docker enviroment.
 
 ## Usage
 
@@ -65,11 +67,11 @@ Some results at default training settings are shown here.
 
 ![](images/test_accuracy.png)
 
-Method     |   Routing   |   Reconstruction  |  Test error  |  *Paper*    
+Method     |   Routing   |   Reconstruction  |  Test error (1 run) |  *Paper* (average of 3 runs)    
 :---------|:------:|:---:|:----:|:----:
-CapsNet-v1 |  1 | no | not tested yet  | *0.34 (0.032)* 
-CapsNet-v2  |  1 | yes | not tested yet | *0.29 (0.011)*
-CapsNet-v3 |  3 | no | not tested yet | *0.35 (0.036)*
+CapsNet-v1 |  1 | no | not tested yet  | *0.34* 
+CapsNet-v2  |  1 | yes | not tested yet | *0.29*
+CapsNet-v3 |  3 | no | not tested yet | *0.35*
 CapsNet-v4  |  3 | yes| **0.33** | *0.25*
 
 ### Reconstruction results

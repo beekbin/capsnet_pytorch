@@ -24,8 +24,8 @@ parser.add_argument('--batch-size', type=int, default=128, metavar='N',
 					help='input batch size for training (default: 128)')
 parser.add_argument('--test-batch-size', type=int, default=128, metavar='N',
 					help='input batch size for testing (default: 128)')
-parser.add_argument('--epochs', type=int, default=100, metavar='N',
-					help='number of epochs to train (default: 10)')
+parser.add_argument('--epochs', type=int, default=300, metavar='N',
+					help='number of epochs to train (default: 300)')
 parser.add_argument('--lr', type=float, default=0.001, metavar='LR',
 					help='learning rate (default: 0.01)')
 parser.add_argument('--lr-decay-factor', type=float, default=0.9, metavar='DF',
@@ -34,18 +34,16 @@ parser.add_argument('--lr-decay-epoch', type=int, default=1, metavar='DE',
 					help='how many epochs to wait before decaying learning rate (default: 1)')
 parser.add_argument('--routing', type=int, default=3, metavar='R',
 					help='iteration numbers for dymanic routing b/w capsules (default: 3)')
+parser.add_argument('--no-reconstruct', dest='reconstruct', action='store_false', 
+					help='Disable reconstruction loss (default: False)')
 parser.add_argument('--seed', type=int, default=1, metavar='S',
 					help='random seed (default: 1)')
-parser.add_argument('--org-path', default='original.png', metavar='O',
-					help='path to save test images to reconstruct (default: original.png)')
-parser.add_argument('--rec-path', default='reconstructed.png', metavar='R',
-					help='path to save reconstructed test images (default: reconstructed.png)')
 parser.add_argument('--tb-log-interval', type=int, default=10, metavar='N',
 					help='how many batches to wait before saving training status to TensorBoard (default: 10)')
 parser.add_argument('--tb-image-interval', type=int, default=100, metavar='N',
 					help='how many batches to wait before saving reconstructed images to TensorBoard (default: 100)')
-parser.add_argument('--tb-log-dir', default=None, metavar='LD',
-					help='directory to output TensorBoard event file (default: runs/<DATETIME>)')
+parser.add_argument('--log-dir', '-o', default=None, metavar='LD',
+					help='directory under `runs` to output TensorBoard event file, reconstructed.png, and original.png (default: <DATETIME>)')
 parser.add_argument('--gpu', type=int, default=0, metavar='G',
 					help='id of the GPU to use (default: 0)')
 
@@ -55,7 +53,7 @@ args = parser.parse_args()
 # Check CUDA availability.
 if args.gpu >= 0:
 	assert torch.cuda.is_available(), \
-		'Aborted. CUDA seems to be not available. Use `--gpu -1` option to train with CPUs.'
+		'Aborted. CUDA does not seem to be available. Use `--gpu -1` option to train with CPUs.'
 
 
 # Setup TensorBoardX summary writer.
@@ -63,9 +61,9 @@ from tensorboardX import SummaryWriter
 from datetime import datetime
 import os
 
-if args.tb_log_dir is None:
-	args.tb_log_dir = os.path.join('runs', datetime.now().strftime('%b%d_%H-%M-%S'))
-writer = SummaryWriter(log_dir=args.tb_log_dir)
+log_dir = args.log_dir if (args.log_dir is not None) else datetime.now().strftime('%b%d_%H-%M-%S')
+log_dir = os.path.join('runs', log_dir)
+writer = SummaryWriter(log_dir=log_dir)
 
 
 # Initialize the random seed.
@@ -109,7 +107,7 @@ test_loader = torch.utils.data.DataLoader(
 
 
 # Build CapsNet.
-model = CapsuleNetwork(routing_iters=args.routing, gpu=args.gpu)
+model = CapsuleNetwork(routing_iters=args.routing, reconstruct=args.reconstruct, gpu=args.gpu)
 if args.gpu >=0:
 	model = model.cuda(args.gpu)
 
@@ -120,23 +118,25 @@ print(model)
 optimizer = optim.Adam(model.parameters(), lr=args.lr)
 
 
-# Get some random test images for reconstruction testing.
-test_iter = iter(test_loader)
-reconstruction_samples, _ = test_iter.next()
+if args.reconstruct:
+	# Get some random test images for reconstruction testing.
+	test_iter = iter(test_loader)
+	reconstruction_samples, _ = test_iter.next()
 
-vutils.save_image(reconstruction_samples, args.org_path, normalize=True)
-writer.add_image('original', vutils.make_grid(reconstruction_samples, normalize=True))
+	vutils.save_image(reconstruction_samples, os.path.join(log_dir, 'original.png'), normalize=True)
+	writer.add_image('original', vutils.make_grid(reconstruction_samples, normalize=True))
 
-reconstruction_samples = Variable(reconstruction_samples, volatile=True)
-if args.gpu >= 0:
-	reconstruction_samples = reconstruction_samples.cuda(args.gpu)
+	reconstruction_samples = Variable(reconstruction_samples)
+	if args.gpu >= 0:
+		reconstruction_samples = reconstruction_samples.cuda(args.gpu)
 
 
 # Function to reconstruct the test images.
 def reconstruct_test_images():
 	model.eval()
 
-	output = model(reconstruction_samples)
+	with torch.no_grad():
+		output = model(reconstruction_samples)
 
 	reconstructed = model.reconstruct(output)
 	reconstructed = reconstructed.data.cpu()
@@ -188,25 +188,27 @@ def train(epoch):
 
 		print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
 			epoch, batch_idx * args.batch_size, len(train_loader.dataset),
-			100. * batch_idx / len(train_loader), loss.data[0] )
+			100. * batch_idx / len(train_loader), loss.item() )
 		)
-
-		reconstructed = reconstruct_test_images()
-		vutils.save_image(reconstructed, args.rec_path, normalize=True)
+		
+		if args.reconstruct:
+			reconstructed = reconstruct_test_images()
+			vutils.save_image(reconstructed, os.path.join(log_dir, 'reconstructed.png'), normalize=True)
 		
 		n_iter = epoch * len(train_loader) + batch_idx
 
 		if n_iter % args.tb_log_interval == 0:
 			# Log train/loss to TensorBoard.
-			writer.add_scalar('train/loss', loss.data[0], n_iter)
-			writer.add_scalar('train/loss_margin', margin_loss.data[0], n_iter)
-			writer.add_scalar('train/loss_reconstruction', reconstruction_loss.data[0], n_iter)
+			writer.add_scalar('train/loss', loss.item(), n_iter)
+			writer.add_scalar('train/loss_margin', margin_loss.item(), n_iter)
+			if args.reconstruct:
+				writer.add_scalar('train/loss_reconstruction', reconstruction_loss.item(), n_iter)
 
 			# Log base learning rate to TensorBoard.
 			lr = get_lr()[0]
 			writer.add_scalar('lr', lr, n_iter)
 
-		if n_iter % args.tb_image_interval == 0:
+		if args.reconstruct and (n_iter % args.tb_image_interval == 0):
 			# Log reconstructed test images to TensorBoard.
 			writer.add_image(
 				'reconstructed/iter_{}'.format(n_iter), 
@@ -219,22 +221,23 @@ def train(epoch):
 # Function for testing.
 def test(epoch):
 	model.eval()
-	test_loss, test_margin_loss, test_rec_loss = 0, 0, 0
+	test_loss, test_margin_loss, test_rec_loss = 0., 0., 0.
 	correct = 0
 
 	for data, target in test_loader:
 		target_indices = target
 		target_one_hot = to_one_hot(target_indices)
 
-		data, target = Variable(data, volatile=True), Variable(target_one_hot)
+		data, target = Variable(data), Variable(target_one_hot)
 		if args.gpu >= 0:
 			data, target = data.cuda(args.gpu), target.cuda(args.gpu)
-
-		output = model(data)
+		
+		with torch.no_grad():
+			output = model(data)
 
 		# Sum up batch loss by `size_average=False`, later being averaged over all test samples.
 		loss, margin_loss, reconstruction_loss = model.loss(data, output, target, size_average=False)
-		loss, margin_loss, reconstruction_loss = loss.data[0], margin_loss.data[0], reconstruction_loss.data[0]
+		loss, margin_loss, reconstruction_loss = loss.item(), margin_loss.item(), reconstruction_loss.item()
 
 		test_loss += loss
 		test_margin_loss += margin_loss
@@ -249,7 +252,7 @@ def test(epoch):
 	test_margin_loss /= len(test_loader.dataset)
 	test_rec_loss /= len(test_loader.dataset)
 
-	test_accuracy = 100. * correct / len(test_loader.dataset)
+	test_accuracy = 100. * float(correct) / float(len(test_loader.dataset))
 	print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.2f}%)\n'.format(
 		test_loss, correct, len(test_loader.dataset), test_accuracy )
 	)
@@ -258,7 +261,8 @@ def test(epoch):
 	n_iter = epoch * len(train_loader)
 	writer.add_scalar('test/loss', test_loss, n_iter)
 	writer.add_scalar('test/loss_margin', test_margin_loss, n_iter)
-	writer.add_scalar('test/loss_reconstruction', test_rec_loss, n_iter)
+	if args.reconstruct:
+		writer.add_scalar('test/loss_reconstruction', test_rec_loss, n_iter)
 	writer.add_scalar('test/accuracy', test_accuracy, n_iter)
 
 

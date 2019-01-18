@@ -62,7 +62,7 @@ class DigitCaps(nn.Module):
 		u_hat_detached = u_hat.detach()
 		# u_hat_detached: [batch_size, in_capsules=1152, out_capsules=10, out_capsule_size=16, 1]
 		# In forward pass, `u_hat_detached` = `u_hat`, and 
-	# in backward, no gradient can flow from `u_hat_detached` back to `u_hat`.
+		# in backward, no gradient can flow from `u_hat_detached` back to `u_hat`.
 
 		# Initialize routing logits to zero.
 		b_ij = Variable(torch.zeros(self.in_capsules, self.out_capsules, 1))

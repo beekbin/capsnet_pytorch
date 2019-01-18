@@ -18,10 +18,11 @@ from decoder import Decoder
 
 
 class CapsuleNetwork(nn.Module):
-	def __init__(self, routing_iters, gpu):
+	def __init__(self, routing_iters=3, reconstruct=True, gpu=0):
 		super(CapsuleNetwork, self).__init__()
 
 		self.gpu = gpu
+		self.has_reconstruction = reconstruct
 
 		# Build modules for CapsNet.
 
@@ -34,8 +35,9 @@ class CapsuleNetwork(nn.Module):
 		## DigitCaps layer
 		self.digit_caps = DigitCaps(routing_iters=routing_iters, gpu=gpu)
 
-		## Decoder
-		self.decoder = Decoder()
+		## Decoder for reconstruction
+		if reconstruct:
+			self.decoder = Decoder()
 
 	def forward(self, x):
 		# x: [bacch_size, 1, 28, 28]
@@ -57,8 +59,14 @@ class CapsuleNetwork(nn.Module):
 		# target: [batch_size, 10]
 
 		margin_loss = self.margin_loss(input, target, size_average)
-		reconstruction_loss = self.reconstruction_loss(images, input, size_average)
 
+		if self.has_reconstruction:
+			reconstruction_loss = self.reconstruction_loss(images, input, size_average)
+		else:
+			reconstruction_loss = Variable(torch.zeros(1))
+			if self.gpu >= 0:
+				reconstruction_loss = reconstruction_loss.cuda(self.gpu)
+		
 		loss = margin_loss + reconstruction_loss
 
 		return loss, margin_loss, reconstruction_loss
@@ -130,6 +138,8 @@ class CapsuleNetwork(nn.Module):
 
 	def reconstruct(self, input):
 		# input: [batch_size, 10, 16]
+
+		assert self.has_reconstruction, 'Reconstruction path is disabled. For the reconstruction, configure `reconstruct=True` of CapsuleNetwork.'
 
 		# Get the lengths of capsule outputs.
 		v_mag = torch.sqrt((input**2).sum(dim=2))
