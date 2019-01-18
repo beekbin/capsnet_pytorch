@@ -13,10 +13,10 @@ This figure is from [CapsNet-Tensorflow](https://github.com/naturomics/CapsNet-T
 ## Requirements
 
 - GPU and NVIDIA driver
-- PyTorch and other Python modules (see (requiremtns.txt)[requiremtns.txt]).
+- PyTorch and other Python modules (see [requirements.txt](requirements.txt)).
 
 This repository also provides Dockerfile for CapsNet training. 
-Check (docker directory)[docker] to know how to setup/use Docker enviroment.
+Check [docker directory](docker) to know how to setup/use Docker enviroment.
 
 ## Usage
 
