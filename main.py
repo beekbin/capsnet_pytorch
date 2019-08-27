@@ -82,7 +82,7 @@ train_dataset = datasets.MNIST(
 )
 
 test_dataset = datasets.MNIST(
-	'data', train=False, download=True, 
+	'data', train=False, download=True,
 	transform=transforms.Compose([
 		transforms.ToTensor(),
 		transforms.Normalize((0.1307,), (0.3081,))
